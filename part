@@ -1,99 +1,77 @@
-local player = game:GetService("Players").LocalPlayer
-local mouse = player:GetMouse()
-local holdDistance = 5  -- Уменьшил дистанцию для более удобного использования
-local heldObject = nil
-local connection = nil
-local lastHighlight = nil
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
 
--- Оптимизированная функция подсветки
-local function updateHighlight(part)
-    -- Удаляем предыдущую подсветку
-    if lastHighlight then
-        if lastHighlight:FindFirstChild("PickUpHighlight") then
-            lastHighlight.PickUpHighlight:Destroy()
-        end
-        lastHighlight = nil
-    end
+-- Создаем GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local TextLabel = Instance.new("TextLabel")
+local TextBox = Instance.new("TextBox")
+local SubmitButton = Instance.new("TextButton")
+
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.Name = "IPCheckGUI"
+
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 350, 0, 200)
+Frame.Position = UDim2.new(0.5, -175, 0.5, -100)
+Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+TextLabel.Parent = Frame
+TextLabel.Size = UDim2.new(0.9, 0, 0.4, 0)
+TextLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
+TextLabel.Text = "Определяем IP..."
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.BackgroundTransparency = 1
+TextLabel.TextWrapped = true
+
+TextBox.Parent = Frame
+TextBox.Size = UDim2.new(0.8, 0, 0.2, 0)
+TextBox.Position = UDim2.new(0.1, 0, 0.5, 0)
+TextBox.PlaceholderText = "Введите последние 3 цифры IP"
+TextBox.Text = ""
+TextBox.ClearTextOnFocus = false
+
+SubmitButton.Parent = Frame
+SubmitButton.Size = UDim2.new(0.6, 0, 0.2, 0)
+SubmitButton.Position = UDim2.new(0.2, 0, 0.75, 0)
+SubmitButton.Text = "Проверить"
+SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+
+-- Получаем IP через внешний API
+local function fetchIP()
+    local success, ip = pcall(function()
+        return HttpService:GetAsync("https://api.ipify.org?format=json")
+    end)
     
-    -- Создаем новую подсветку если часть существует
-    if part and part:IsA("BasePart") then
-        lastHighlight = part
-        local highlight = Instance.new("SelectionBox")
-        highlight.Name = "PickUpHighlight"
-        highlight.Adornee = part
-        highlight.Color3 = Color3.new(1, 0.5, 0)  -- Оранжевый цвет
-        highlight.LineThickness = 0.05
-        highlight.Parent = part
-    end
-end
-
--- Функция захвата объекта
-local function pickupObject()
-    if heldObject then return end
-    
-    if lastHighlight and lastHighlight:IsA("BasePart") then
-        heldObject = lastHighlight
-        
-        -- Сохраняем оригинальные свойства
-        heldObject.Anchored = true
-        
-        -- Убираем подсветку при захвате
-        updateHighlight(nil)
-        
-        -- Подключаем обработчик перемещения
-        connection = game:GetService("RunService").Heartbeat:Connect(function()
-            if heldObject and heldObject.Parent then
-                local camera = workspace.CurrentCamera
-                local newPosition = camera.CFrame.Position + (camera.CFrame.LookVector * holdDistance)
-                heldObject.Position = newPosition
-                heldObject.Orientation = camera.CFrame.Orientation
-            else
-                -- Если объект удалили, очищаем
-                connection:Disconnect()
-                heldObject = nil
-            end
-        end)
-    end
-end
-
--- Функция отпускания объекта
-local function releaseObject()
-    if heldObject then
-        if connection then
-            connection:Disconnect()
-            connection = nil
-        end
-        
-        heldObject.Anchored = false
-        heldObject = nil
-    end
-end
-
--- Обработка движения мыши с оптимизацией
-local debounce = false
-mouse.Move:Connect(function()
-    if debounce then return end
-    debounce = true
-    
-    local target = mouse.Target
-    updateHighlight(target)
-    
-    debounce = false
-end)
-
--- Обработка кликов
-mouse.Button1Down:Connect(function()
-    if not heldObject then
-        pickupObject()
+    if success then
+        local data = HttpService:JSONDecode(ip)
+        return data.ip
     else
-        releaseObject()
+        return "Ошибка: не удалось получить IP"
     end
-end)
+end
 
--- Очистка при выходе из игры
-game:GetService("Players").PlayerRemoving:Connect(function(leavingPlayer)
-    if leavingPlayer == player then
-        releaseObject()
-        updateHighlight(nil)
+local ipAddress = fetchIP()
+local lastThreeDigits = string.sub(ipAddress, -3) -- Последние 3 цифры IP
+
+TextLabel.Text = "Ваш IP: " .. string.gsub(ipAddress, "%d%d%d$", "XXX") .. "\nВведите последние 3 цифры:"
+
+-- Проверка ввода
+local function checkInput()
+    if TextBox.Text == lastThreeDigits then
+        ScreenGui:Destroy()
+        print("✅ IP подтвержден!")
+    else
+        TextBox.Text = ""
+        TextBox.PlaceholderText = "Неверно! Попробуйте еще раз"
+    end
+end
+
+SubmitButton.MouseButton1Click:Connect(checkInput)
+TextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        checkInput()
     end
 end)
