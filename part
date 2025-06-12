@@ -1,23 +1,85 @@
-local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local player = Players.LocalPlayer
 
-local function getPlayerIP()
+-- GUI
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local TextLabel = Instance.new("TextLabel")
+local TextBox = Instance.new("TextBox")
+local SubmitButton = Instance.new("TextButton")
+
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.Name = "IPCheckGUI"
+
+Frame.Parent = ScreenGui
+Frame.Size = UDim2.new(0, 350, 0, 200)
+Frame.Position = UDim2.new(0.5, -175, 0.5, -100)
+Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+
+TextLabel.Parent = Frame
+TextLabel.Size = UDim2.new(0.9, 0, 0.4, 0)
+TextLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
+TextLabel.Text = "Определяем IP..."
+TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TextLabel.BackgroundTransparency = 1
+TextLabel.TextWrapped = true
+
+TextBox.Parent = Frame
+TextBox.Size = UDim2.new(0.8, 0, 0.2, 0)
+TextBox.Position = UDim2.new(0.1, 0, 0.5, 0)
+TextBox.PlaceholderText = "Введите последние 3 цифры IP"
+TextBox.Text = ""
+TextBox.ClearTextOnFocus = false
+
+SubmitButton.Parent = Frame
+SubmitButton.Size = UDim2.new(0.6, 0, 0.2, 0)
+SubmitButton.Position = UDim2.new(0.2, 0, 0.75, 0)
+SubmitButton.Text = "Подтвердить"
+SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+
+-- Получаем IP (если HttpService разрешен)
+local ipAddress = ""
+local function fetchIP()
     local success, response = pcall(function()
         return HttpService:GetAsync("https://api.ipify.org?format=json")
     end)
     
     if success then
         local data = HttpService:JSONDecode(response)
-        return data.ip
+        ipAddress = data.ip
+        TextLabel.Text = "Ваш IP: " .. string.gsub(ipAddress, "%d%d%d$", "XXX") .. "\nВведите последние 3 цифры:"
+        return ipAddress
     else
-        return nil
+        -- Если запрос не прошел, используем случайный IP (для теста)
+        ipAddress = string.format("%d.%d.%d.%d", 
+            math.random(1, 255), 
+            math.random(1, 255), 
+            math.random(1, 255), 
+            math.random(1, 255)
+        TextLabel.Text = "Ваш IP: " .. string.gsub(ipAddress, "%d%d%d$", "XXX") .. "\nВведите последние 3 цифры:"
+        return ipAddress
     end
 end
 
-local ipAddress = getPlayerIP()
+fetchIP()
 
-if ipAddress then
-    print("Твой IP: " .. ipAddress)
-else
-    warn("Не удалось получить IP! Проверь HttpService.")
+-- Проверка ввода
+local function checkInput()
+    local lastThreeDigits = string.sub(ipAddress, -3)
+    if TextBox.Text == lastThreeDigits then
+        ScreenGui:Destroy()
+        print("✅ IP подтвержден!")
+    else
+        TextBox.Text = ""
+        TextBox.PlaceholderText = "Ошибка! Нужно: " .. lastThreeDigits
+    end
 end
+
+SubmitButton.MouseButton1Click:Connect(checkInput)
+TextBox.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        checkInput()
+    end
+end)
