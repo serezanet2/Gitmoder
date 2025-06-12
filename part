@@ -1,0 +1,132 @@
+local player = game:GetService("Players").LocalPlayer
+local mouse = player:GetMouse()
+local holdDistance = 10
+local heldObject = nil
+local connection = nil
+local flying = false
+local seat = nil
+
+-- Функции подсветки
+local function createHighlight(part)
+    if not part:FindFirstChild("PickUpHighlight") then
+        local highlight = Instance.new("SelectionBox")
+        highlight.Name = "PickUpHighlight"
+        highlight.Adornee = part
+        highlight.Color3 = Color3.new(1, 0.5, 0)
+        highlight.LineThickness = 0.05
+        highlight.Parent = part
+    end
+end
+
+local function removeHighlight(part)
+    local highlight = part:FindFirstChild("PickUpHighlight")
+    if highlight then
+        highlight:Destroy()
+    end
+end
+
+-- Функция для управления полетом
+local function enableFlying(enable)
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid then
+        humanoid.PlatformStand = enable
+        flying = enable
+    end
+end
+
+-- Проверка сидения в Seat
+local function checkSeat()
+    if player.Character then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            seat = humanoid.SeatPart
+            if seat and seat.Name == "Seat" then
+                enableFlying(true)
+                return true
+            end
+        end
+    end
+    enableFlying(false)
+    return false
+end
+
+-- Подсветка объектов
+mouse.Move:Connect(function()
+    local target = mouse.Target
+    -- Убираем старые подсветки
+    for _, part in ipairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and part:FindFirstChild("PickUpHighlight") then
+            removeHighlight(part)
+        end
+    end
+    
+    -- Подсвечиваем любой BasePart
+    if target and target:IsA("BasePart") then
+        createHighlight(target)
+    end
+end)
+
+-- Функция захвата объекта
+local function pickupObject()
+    if heldObject then return end
+
+    local target = mouse.Target
+    if target and target:IsA("BasePart") then
+        heldObject = target
+        heldObject.Anchored = true
+        removeHighlight(heldObject)
+
+        -- Если это Seat - проверяем сидит ли игрок
+        if heldObject.Name == "Seat" then
+            checkSeat()
+        end
+
+        connection = game:GetService("RunService").Heartbeat:Connect(function()
+            if heldObject and heldObject.Parent then
+                local camera = workspace.CurrentCamera
+                local newPosition = camera.CFrame.Position + (camera.CFrame.LookVector * holdDistance)
+                heldObject.Position = newPosition
+                heldObject.Orientation = camera.CFrame.Orientation
+            else
+                connection:Disconnect()
+                heldObject = nil
+                enableFlying(false)
+            end
+        end)
+    end
+end
+
+-- Функция отпускания объекта
+local function releaseObject()
+    if heldObject then
+        if connection then
+            connection:Disconnect()
+        end
+        heldObject.Anchored = false
+        if heldObject.Name == "Seat" then
+            enableFlying(false)
+        end
+        heldObject = nil
+    end
+end
+
+-- Обработка кликов
+mouse.Button1Down:Connect(function()
+    if not heldObject then
+        pickupObject()
+    else
+        releaseObject()
+    end
+end)
+
+-- Проверка сидения каждый кадр
+game:GetService("RunService").Heartbeat:Connect(function()
+    if heldObject and heldObject.Name == "Seat" then
+        checkSeat()
+    end
+end)
+
+-- Очистка при выходе
+game:GetService("UserInputService").WindowFocusReleased:Connect(function()
+    releaseObject()
+end)
