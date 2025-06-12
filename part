@@ -1,64 +1,75 @@
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 local player = Players.LocalPlayer
 
--- GUI
+-- Создаем интерфейс
 local ScreenGui = Instance.new("ScreenGui")
-local Frame = Instance.new("Frame")
-local TextLabel = Instance.new("TextLabel")
-local TextBox = Instance.new("TextBox")
-local SubmitButton = Instance.new("TextButton")
-
 ScreenGui.Parent = player:WaitForChild("PlayerGui")
-ScreenGui.Name = "IPCheckGUI"
 
-Frame.Parent = ScreenGui
+local Frame = Instance.new("Frame")
 Frame.Size = UDim2.new(0, 350, 0, 200)
 Frame.Position = UDim2.new(0.5, -175, 0.5, -100)
 Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Frame.Parent = ScreenGui
 
-TextLabel.Parent = Frame
+local TextLabel = Instance.new("TextLabel")
 TextLabel.Size = UDim2.new(0.9, 0, 0.4, 0)
 TextLabel.Position = UDim2.new(0.05, 0, 0.1, 0)
-TextLabel.Text = "Введите последние 3 цифры вашего IP:"
+TextLabel.Text = "Определяем ваш IP..."
 TextLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TextLabel.BackgroundTransparency = 1
 TextLabel.TextWrapped = true
+TextLabel.Parent = Frame
 
-TextBox.Parent = Frame
+local TextBox = Instance.new("TextBox")
 TextBox.Size = UDim2.new(0.8, 0, 0.2, 0)
 TextBox.Position = UDim2.new(0.1, 0, 0.5, 0)
-TextBox.PlaceholderText = "Например: 123"
+TextBox.PlaceholderText = "Введите последние 3 цифры IP"
 TextBox.Text = ""
 TextBox.ClearTextOnFocus = false
+TextBox.Parent = Frame
 
-SubmitButton.Parent = Frame
+local SubmitButton = Instance.new("TextButton")
 SubmitButton.Size = UDim2.new(0.6, 0, 0.2, 0)
 SubmitButton.Position = UDim2.new(0.2, 0, 0.75, 0)
 SubmitButton.Text = "Подтвердить"
 SubmitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 SubmitButton.BackgroundColor3 = Color3.fromRGB(0, 120, 0)
+SubmitButton.Parent = Frame
 
--- Здесь можно вручную задать IP (если HTTP не работает)
-local ipAddress = "192.168.1.123" -- Замени на свой IP!
-local lastThreeDigits = string.sub(ipAddress, -3)
+-- Функция получения IP
+local ipAddress = ""
+local function fetchIP()
+    local success, response = pcall(function()
+        return HttpService:GetAsync("https://api.ipify.org?format=json")
+    end)
+    
+    if success then
+        local data = HttpService:JSONDecode(response)
+        ipAddress = data.ip
+        TextLabel.Text = "Ваш IP: " .. string.gsub(ipAddress, "%d%d%d$", "XXX") .. "\nВведите последние 3 цифры:"
+        return ipAddress
+    else
+        TextLabel.Text = "Ошибка получения IP!\nВведите последние 3 цифры вручную:"
+        return nil
+    end
+end
 
-SubmitButton.MouseButton1Click:Connect(function()
+-- Основная проверка
+local function checkCode()
+    local lastThreeDigits = string.sub(ipAddress, -3)
     if TextBox.Text == lastThreeDigits then
         ScreenGui:Destroy()
-        print("✅ IP подтвержден!")
+        print("✅ Доступ разрешен!")
     else
         TextBox.Text = ""
-        TextBox.PlaceholderText = "Ошибка! Нужно: " .. lastThreeDigits
+        TextBox.PlaceholderText = "Неверно! Ожидается: " .. lastThreeDigits
     end
-end)
+end
 
+-- Инициализация
+fetchIP()
+SubmitButton.MouseButton1Click:Connect(checkCode)
 TextBox.FocusLost:Connect(function(enterPressed)
-    if enterPressed then
-        if TextBox.Text == lastThreeDigits then
-            ScreenGui:Destroy()
-        else
-            TextBox.Text = ""
-            TextBox.PlaceholderText = "Неверно! Попробуйте снова"
-        end
-    end
+    if enterPressed then checkCode() end
 end)
