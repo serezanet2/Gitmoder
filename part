@@ -1,36 +1,17 @@
 local player = game:GetService("Players").LocalPlayer
 local CoreGui = game:GetService("CoreGui")
 
--- Определение инжектора
-local injector = "Unknown"
-if syn and syn.protect_gui then
-    injector = "Synapse"
-elseif KRNL_LOADED then
-    injector = "Krnl"
-elseif PROTOSMASHER_LOADED then
-    injector = "ProtoSmasher"
-elseif identifyexecutor then
-    injector = identifyexecutor() or "Unknown"
-elseif getexecutorname then
-    injector = getexecutorname() or "Unknown"
-end
-
--- Создание защищенного GUI
+-- Создаем интерфейс
 local gui = Instance.new("ScreenGui")
-gui.Name = "CNG_"..tostring(math.random(10000,99999))
+gui.Name = "CNG_Display_"..tostring(math.random(1000,9999))
 gui.ResetOnSpawn = false
-
-if syn and syn.protect_gui then
-    syn.protect_gui(gui)
-end
-
 gui.Parent = CoreGui
 
 -- Основной фрейм
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 350, 0, 60)
-frame.Position = UDim2.new(0.5, -175, 0.1, 0)
-frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+frame.Size = UDim2.new(0, 300, 0, 50)
+frame.Position = UDim2.new(0.5, -150, 0.1, 0)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 frame.BorderSizePixel = 0
 frame.Parent = gui
 
@@ -38,8 +19,8 @@ frame.Parent = gui
 local text = Instance.new("TextLabel")
 text.Size = UDim2.new(1, -40, 1, 0)
 text.Position = UDim2.new(0, 10, 0, 0)
-text.Text = "CNG_"..player.Name..".com_"..injector
-text.TextColor3 = Color3.fromRGB(85, 255, 85)
+text.Text = "CNG_"..player.Name..".com"
+text.TextColor3 = Color3.fromRGB(0, 255, 0)
 text.Font = Enum.Font.Code
 text.TextSize = 16
 text.TextXAlignment = Enum.TextXAlignment.Left
@@ -49,7 +30,7 @@ text.Parent = frame
 -- Кнопка закрытия
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 30, 0, 30)
-closeBtn.Position = UDim2.new(1, -35, 0, 15)
+closeBtn.Position = UDim2.new(1, -35, 0, 10)
 closeBtn.Text = "X"
 closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 closeBtn.Font = Enum.Font.GothamBold
@@ -60,16 +41,4 @@ closeBtn.Parent = frame
 -- Функция закрытия
 closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
-end)
-
--- Дополнительная защита для некоторых инжекторов
-task.spawn(function()
-    while true do
-        if not gui or not gui.Parent then
-            local newGui = gui:Clone()
-            newGui.Parent = CoreGui
-            gui = newGui
-        end
-        task.wait(5)
-    end
 end)
