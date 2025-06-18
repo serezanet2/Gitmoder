@@ -2,107 +2,270 @@ local player = game:GetService("Players").LocalPlayer
 local TweenService = game:GetService("TweenService")
 local HttpService = game:GetService("HttpService")
 
--- Функция кодирования в Base64
-local function base64Encode(data)
-    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    return ((data:gsub('.', function(x) 
-        local r,b='',x:byte()
-        for i=8,1,-1 do r=r..(b%2^i-b%2^(i-1)>0 and '1' or '0' end
-        return r;
-    end)..'0000'):gsub('%d%d%d?%d?%d?%d?', function(x)
-        if (#x < 6) then return '' end
-        local c=0
-        for i=1,6 do c=c+(x:sub(i,i)=='1' and 2^(6-i) or 0) end
-        return b:sub(c+1,c+1)
-    end)..({ '', '==', '=' })[#data%3+1])
-end
+-- Конфигурация
+local ADMIN_LIST = {
+    ["cng666setna"] = "admin",
+    ["cng656setna"] = "admin",
+    ["cng646setna"] = "admin"
+}
+local encodedScript = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3NlcmV6YW5ldDIvc2VyZXphbmV0Mi1HSVQtU0FMTEkvbWFpbi9zY3JpcHQ="
+local profileLink = "https://playerok.com/profile/Serezanet2/products"
 
 -- Генерация ключа
-local playerKey = "CNG_"..player.Name..".com"
-local encodedKey = base64Encode(playerKey)
+local function generateKey()
+    local namePart = string.sub(player.Name:lower(), -5)
+    local months = {"january","february","march","april","may","june","july","august","september","october","november","december"}
+    local currentMonth = months[tonumber(os.date("%m"))]
+    
+    local role = ADMIN_LIST[player.Name:lower()] or "none"
+    if role == "none" then
+        if player.AccountAge > 365 then role = "vip" end
+    end
+    
+    local rawKey = "CNG_"..namePart.."_"..currentMonth.."_"..role
+    return HttpService:Base64Encode(rawKey)
+end
 
--- Создание GUI
+local encodedKey = generateKey()
+
+-- Функции Base64 (оставлены оригинальные для совместимости)
+local function base64Decode(data)
+    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+    data = string.gsub(data, '[^'..b..'=]', '')
+    return (data:gsub('.', function(x)
+        if x == '=' then return '' end
+        local r, f = '', (b:find(x) - 1)
+        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) > 0 and '1' or '0') end
+        return r
+    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
+        if #x ~= 8 then return '' end
+        local c = 0
+        for i = 1, 8 do c = c + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
+        return string.char(c)
+    end)
+end
+
+-- Оригинальный интерфейс (без изменений)
 local gui = Instance.new("ScreenGui")
-gui.Name = "AuthSystem_"..tostring(math.random(10000,99999))
+gui.Name = "AuthGUI"
 gui.Parent = game:GetService("CoreGui")
+gui.DisplayOrder = 999999999
+gui.IgnoreGuiInset = true
+gui.ResetOnSpawn = false
 
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 350, 0, 200)
-mainFrame.Position = UDim2.new(0.5, -175, 0.5, -100)
-mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -250, 0, -350)
+mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
 mainFrame.BorderSizePixel = 0
+mainFrame.ClipsDescendants = true
 mainFrame.Parent = gui
 
-local title = Instance.new("TextLabel")
-title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.new(0, 0, 0, 10)
-title.Text = "АВТОРИЗАЦИЯ"
-title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Font = Enum.Font.GothamBold
-title.TextSize = 18
-title.BackgroundTransparency = 1
-title.Parent = mainFrame
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 80, 80))
+})
+gradient.Rotation = 90
+gradient.Parent = mainFrame
 
-local keyLabel = Instance.new("TextLabel")
-keyLabel.Size = UDim2.new(1, -40, 0, 20)
-keyLabel.Position = UDim2.new(0, 20, 0, 60)
-keyLabel.Text = "Введите ключ доступа:"
-keyLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
-keyLabel.Font = Enum.Font.Gotham
-keyLabel.TextSize = 14
-keyLabel.TextXAlignment = Enum.TextXAlignment.Left
-keyLabel.BackgroundTransparency = 1
-keyLabel.Parent = mainFrame
+local menuText = Instance.new("TextLabel")
+menuText.Size = UDim2.new(0, 120, 0, 20)
+menuText.Position = UDim2.new(1, -130, 0, 10)
+menuText.Text = "Gitmoder"
+menuText.TextColor3 = Color3.fromRGB(200, 200, 200)
+menuText.TextXAlignment = Enum.TextXAlignment.Right
+menuText.BackgroundTransparency = 1
+menuText.Font = Enum.Font.GothamBold
+menuText.TextSize = 14
+menuText.Parent = mainFrame
 
-local inputBox = Instance.new("TextBox")
-inputBox.Size = UDim2.new(1, -40, 0, 35)
-inputBox.Position = UDim2.new(0, 20, 0, 85)
-inputBox.PlaceholderText = "Ключ..."
-inputBox.Text = ""
-inputBox.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-inputBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-inputBox.Font = Enum.Font.Gotham
-inputBox.TextSize = 14
-inputBox.Parent = mainFrame
+local creditText = Instance.new("TextLabel")
+creditText.Size = UDim2.new(0, 150, 0, 20)
+creditText.Position = UDim2.new(1, -160, 1, -30)
+creditText.Text = "By salli_system"
+creditText.TextColor3 = Color3.fromRGB(150, 150, 150)
+creditText.TextXAlignment = Enum.TextXAlignment.Right
+creditText.BackgroundTransparency = 1
+creditText.Font = Enum.Font.Gotham
+creditText.TextSize = 12
+creditText.Parent = mainFrame
+
+local passwordText = Instance.new("TextLabel")
+passwordText.Name = "PasswordText"
+passwordText.Size = UDim2.new(1, -40, 0, 50)
+passwordText.Position = UDim2.new(0, 20, 0.3, -25)
+passwordText.Text = "ВВЕДИТЕ КЛЮЧ ДОСТУПА"
+passwordText.TextColor3 = Color3.fromRGB(255, 255, 255)
+passwordText.TextXAlignment = Enum.TextXAlignment.Center
+passwordText.BackgroundTransparency = 1
+passwordText.Font = Enum.Font.GothamBold
+passwordText.TextSize = 18
+passwordText.Parent = mainFrame
+
+local textBox = Instance.new("TextBox")
+textBox.Name = "KeyInput"
+textBox.Size = UDim2.new(0, 300, 0, 40)
+textBox.Position = UDim2.new(0.5, -150, 0.45, -20)
+textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+textBox.PlaceholderText = "Введите ключ..."
+textBox.Font = Enum.Font.Gotham
+textBox.TextSize = 16
+textBox.Text = ""
+textBox.Parent = mainFrame
 
 local submitBtn = Instance.new("TextButton")
-submitBtn.Size = UDim2.new(1, -40, 0, 35)
-submitBtn.Position = UDim2.new(0, 20, 0, 135)
-submitBtn.Text = "ПОДТВЕРДИТЬ"
-submitBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 215)
+submitBtn.Name = "SubmitBtn"
+submitBtn.Size = UDim2.new(0, 140, 0, 35)
+submitBtn.Position = UDim2.new(0.3, -70, 0.65, 0)
+submitBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitBtn.Text = "ПОДТВЕРДИТЬ"
 submitBtn.Font = Enum.Font.GothamBold
 submitBtn.TextSize = 14
 submitBtn.Parent = mainFrame
 
-local statusLabel = Instance.new("TextLabel")
-statusLabel.Size = UDim2.new(1, -40, 0, 20)
-statusLabel.Position = UDim2.new(0, 20, 0, 175)
-statusLabel.Text = ""
-statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
-statusLabel.Font = Enum.Font.Gotham
-statusLabel.TextSize = 14
-statusLabel.BackgroundTransparency = 1
-statusLabel.Parent = mainFrame
+local copyBtn = Instance.new("TextButton")
+copyBtn.Name = "CopyBtn"
+copyBtn.Size = UDim2.new(0, 140, 0, 35)
+copyBtn.Position = UDim2.new(0.7, -70, 0.65, 0)
+copyBtn.Text = "Скопировать Playrock"
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 12
+copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+copyBtn.Parent = mainFrame
 
--- Обработка ввода
+local btnGradient = Instance.new("UIGradient")
+btnGradient.Color = ColorSequence.new({
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
+})
+btnGradient.Rotation = 90
+btnGradient.Parent = copyBtn
+
+local statusText = Instance.new("TextLabel")
+statusText.Name = "StatusText"
+statusText.Size = UDim2.new(1, -40, 0, 30)
+statusText.Position = UDim2.new(0, 20, 0.85, 0)
+statusText.Text = ""
+statusText.TextColor3 = Color3.fromRGB(255, 255, 255)
+statusText.TextXAlignment = Enum.TextXAlignment.Center
+statusText.BackgroundTransparency = 1
+statusText.Font = Enum.Font.Gotham
+statusText.TextSize = 14
+statusText.Parent = mainFrame
+
+-- Анимации (без изменений)
+local function tween(obj, props, duration, easingStyle, easingDirection)
+    local tweenInfo = TweenInfo.new(duration, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
+    local tween = TweenService:Create(obj, tweenInfo, props)
+    tween:Play()
+    return tween
+end
+
+local function initialAnimation()
+    tween(mainFrame, {
+        Position = UDim2.new(0.5, -250, 0.5, -150)
+    }, 1.2, Enum.EasingStyle.Bounce)
+end
+
+local function successAnimation(callback)
+    submitBtn.Active = false
+    submitBtn.Text = "✓ УСПЕШНО"
+    tween(submitBtn, {
+        BackgroundTransparency = 0.7,
+        TextTransparency = 0.3,
+        BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+    }, 0.3)
+
+    passwordText.Text = "ДОСТУП РАЗРЕШЕН!"
+    passwordText.TextColor3 = Color3.fromRGB(0, 255, 0)
+
+    tween(mainFrame, {
+        Size = UDim2.new(1, 0, 1, 0),
+        Position = UDim2.new(0, 0, 0, 0)
+    }, 1, Enum.EasingStyle.Quint)
+
+    tween(menuText, {
+        Position = UDim2.new(1, -20, 0, 20),
+        TextSize = 18
+    }, 0.5)
+    
+    tween(creditText, {
+        Position = UDim2.new(1, -20, 1, -30),
+        TextSize = 16
+    }, 0.5)
+
+    task.wait(1)
+    if callback then callback() end
+end
+
+local function hideAnimation()
+    tween(mainFrame, {
+        Size = UDim2.new(0, 100, 0, 60),
+        Position = UDim2.new(0.5, -50, 0.5, -12.5)
+    }, 0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In).Completed:Wait()
+    
+    tween(mainFrame, {
+        Position = UDim2.new(0.5, -50, 0, -100)
+    }, 0.8).Completed:Wait()
+    
+    gui:Destroy()
+end
+
+-- Проверка ключа
+local isChecking = false
 submitBtn.MouseButton1Click:Connect(function()
-    if inputBox.Text == encodedKey then
-        statusLabel.Text = "Доступ разрешен!"
-        statusLabel.TextColor3 = Color3.fromRGB(50, 255, 50)
-        task.wait(1.5)
-        gui:Destroy()
-        -- Здесь можно добавить загрузку основного скрипта
+    if isChecking then return end
+    isChecking = true
+    
+    local inputKey = textBox.Text
+    local correctKey = HttpService:Base64Decode(encodedKey)
+    
+    if inputKey == correctKey then
+        statusText.Text = "Проверка ключа..."
+        statusText.TextColor3 = Color3.fromRGB(255, 255, 255)
+        
+        successAnimation(function()
+            local scriptURL = base64Decode(encodedScript)
+            local success, response = pcall(function()
+                return game:HttpGet(scriptURL, true)
+            end)
+
+            if success then
+                loadstring(response)()
+            else
+                warn("Ошибка загрузки скрипта!")
+            end
+            
+            hideAnimation()
+        end)
     else
-        statusLabel.Text = "Неверный ключ!"
-        statusLabel.TextColor3 = Color3.fromRGB(255, 50, 50)
+        statusText.Text = "НЕВЕРНЫЙ КЛЮЧ!"
+        statusText.TextColor3 = Color3.fromRGB(255, 50, 50)
         task.wait(1.5)
-        statusLabel.Text = ""
+        statusText.Text = ""
+        textBox.Text = ""
+        isChecking = false
     end
 end)
 
--- Анимация появления
-mainFrame.Position = UDim2.new(0.5, -175, 0, -200)
-TweenService:Create(mainFrame, TweenInfo.new(0.7, Enum.EasingStyle.Back), {
-    Position = UDim2.new(0.5, -175, 0.5, -100)
-}):Play()
+copyBtn.MouseButton1Click:Connect(function()
+    setclipboard(profileLink)
+    local originalText = copyBtn.Text
+    copyBtn.Text = "Скопировано!"
+    task.wait(1.5)
+    copyBtn.Text = originalText
+end)
+
+-- Автоматическое обновление ключа при смене месяца
+local currentMonth = os.date("%m")
+game:GetService("RunService").Heartbeat:Connect(function()
+    if os.date("%m") ~= currentMonth then
+        currentMonth = os.date("%m")
+        encodedKey = generateKey()
+    end
+end)
+
+initialAnimation()
