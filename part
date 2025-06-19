@@ -4,7 +4,7 @@ local HttpService = game:GetService("HttpService")
 
 -- URL вашего сайта на GitHub Pages
 local KEY_CHECK_URL = "https://serezanet2.github.io/GitUnlock/check_key?key="
-local SCRIPT_URL = "https://raw.githubusercontent.com/serezanet2/Gitmoder/main/Gitmoder_LOADER"
+local SCRIPT_URL = "https://raw.githubusercontent.com/serezanet2/serezanet2-GIT-SALLI/refs/heads/main/script"
 local profileLink = "https://playerok.com/profile/Serezanet2/products"
 
 -- Создаем GUI (сохраняем ваш оригинальный дизайн)
