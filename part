@@ -1,271 +1,160 @@
-local player = game:GetService("Players").LocalPlayer
-local TweenService = game:GetService("TweenService")
-local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 
--- Конфигурация
-local ADMIN_LIST = {
-    ["cng666setna"] = "admin",
-    ["cng656setna"] = "admin",
-    ["cng646setna"] = "admin"
-}
-local encodedScript = "aHR0cHM6Ly9yYXcuZ2l0aHVidXNlcmNvbnRlbnQuY29tL3NlcmV6YW5ldDIvc2VyZXphbmV0Mi1HSVQtU0FMTEkvbWFpbi9zY3JpcHQ="
-local profileLink = "https://playerok.com/profile/Serezanet2/products"
+-- Удаляем стандартный Tab, если он есть
+StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.PlayerList, false)
 
--- Генерация ключа
-local function generateKey()
-    local namePart = string.sub(player.Name:lower(), -5)
-    local months = {"january","february","march","april","may","june","july","august","september","october","november","december"}
-    local currentMonth = months[tonumber(os.date("%m"))]
-    
-    local role = ADMIN_LIST[player.Name:lower()] or "none"
-    if role == "none" then
-        if player.AccountAge > 365 then role = "vip" end
-    end
-    
-    local rawKey = "CNG_"..namePart.."_"..currentMonth.."_"..role
-    return HttpService:Base64Encode(rawKey)
+-- Создаем UI элементы
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- Удаляем старый кастомный Tab, если он существует
+local oldCustomTab = playerGui:FindFirstChild("CustomTab")
+if oldCustomTab then
+    oldCustomTab:Destroy()
 end
 
-local encodedKey = generateKey()
+-- Создаем новый ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomTab"
+screenGui.ResetOnSpawn = false
+screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+screenGui.Parent = playerGui
 
--- Функции Base64 (оставлены оригинальные для совместимости)
-local function base64Decode(data)
-    local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-    data = string.gsub(data, '[^'..b..'=]', '')
-    return (data:gsub('.', function(x)
-        if x == '=' then return '' end
-        local r, f = '', (b:find(x) - 1)
-        for i = 6, 1, -1 do r = r .. (f % 2^i - f % 2^(i-1) > 0 and '1' or '0') end
-        return r
-    end):gsub('%d%d%d?%d?%d?%d?%d?%d?', function(x)
-        if #x ~= 8 then return '' end
-        local c = 0
-        for i = 1, 8 do c = c + (x:sub(i, i) == '1' and 2^(8 - i) or 0) end
-        return string.char(c)
-    end)
-end
-
--- Оригинальный интерфейс (без изменений)
-local gui = Instance.new("ScreenGui")
-gui.Name = "AuthGUI"
-gui.Parent = game:GetService("CoreGui")
-gui.DisplayOrder = 999999999
-gui.IgnoreGuiInset = true
-gui.ResetOnSpawn = false
-
+-- Основной контейнер
 local mainFrame = Instance.new("Frame")
-mainFrame.Size = UDim2.new(0, 500, 0, 300)
-mainFrame.Position = UDim2.new(0.5, -250, 0, -350)
-mainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0.2, 0, 0.6, 0)
+mainFrame.Position = UDim2.new(0.78, 0, 0.2, 0)
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+mainFrame.BackgroundTransparency = 0.2
 mainFrame.BorderSizePixel = 0
 mainFrame.ClipsDescendants = true
-mainFrame.Parent = gui
 
-local gradient = Instance.new("UIGradient")
-gradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 80, 80))
-})
-gradient.Rotation = 90
-gradient.Parent = mainFrame
+-- Скругление углов
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0.05, 0)
+corner.Parent = mainFrame
 
-local menuText = Instance.new("TextLabel")
-menuText.Size = UDim2.new(0, 120, 0, 20)
-menuText.Position = UDim2.new(1, -130, 0, 10)
-menuText.Text = "Gitmoder"
-menuText.TextColor3 = Color3.fromRGB(200, 200, 200)
-menuText.TextXAlignment = Enum.TextXAlignment.Right
-menuText.BackgroundTransparency = 1
-menuText.Font = Enum.Font.GothamBold
-menuText.TextSize = 14
-menuText.Parent = mainFrame
+mainFrame.Parent = screenGui
 
-local creditText = Instance.new("TextLabel")
-creditText.Size = UDim2.new(0, 150, 0, 20)
-creditText.Position = UDim2.new(1, -160, 1, -30)
-creditText.Text = "By salli_system"
-creditText.TextColor3 = Color3.fromRGB(150, 150, 150)
-creditText.TextXAlignment = Enum.TextXAlignment.Right
-creditText.BackgroundTransparency = 1
-creditText.Font = Enum.Font.Gotham
-creditText.TextSize = 12
-creditText.Parent = mainFrame
+-- Заголовок
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0.08, 0)
+header.Position = UDim2.new(0, 0, 0, 0)
+header.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+header.BorderSizePixel = 0
+header.Parent = mainFrame
 
-local passwordText = Instance.new("TextLabel")
-passwordText.Name = "PasswordText"
-passwordText.Size = UDim2.new(1, -40, 0, 50)
-passwordText.Position = UDim2.new(0, 20, 0.3, -25)
-passwordText.Text = "ВВЕДИТЕ КЛЮЧ ДОСТУПА"
-passwordText.TextColor3 = Color3.fromRGB(255, 255, 255)
-passwordText.TextXAlignment = Enum.TextXAlignment.Center
-passwordText.BackgroundTransparency = 1
-passwordText.Font = Enum.Font.GothamBold
-passwordText.TextSize = 18
-passwordText.Parent = mainFrame
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0.05, 0)
+headerCorner.Parent = header
 
-local textBox = Instance.new("TextBox")
-textBox.Name = "KeyInput"
-textBox.Size = UDim2.new(0, 300, 0, 40)
-textBox.Position = UDim2.new(0.5, -150, 0.45, -20)
-textBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-textBox.TextColor3 = Color3.fromRGB(255, 255, 255)
-textBox.PlaceholderText = "Введите ключ..."
-textBox.Font = Enum.Font.Gotham
-textBox.TextSize = 16
-textBox.Text = ""
-textBox.Parent = mainFrame
+local headerText = Instance.new("TextLabel")
+headerText.Name = "HeaderText"
+headerText.Size = UDim2.new(1, 0, 1, 0)
+headerText.Position = UDim2.new(0, 0, 0, 0)
+headerText.BackgroundTransparency = 1
+headerText.Text = "Игроки"
+headerText.TextColor3 = Color3.fromRGB(255, 255, 255)
+headerText.TextScaled = true
+headerText.Font = Enum.Font.GothamBold
+headerText.Parent = header
 
-local submitBtn = Instance.new("TextButton")
-submitBtn.Name = "SubmitBtn"
-submitBtn.Size = UDim2.new(0, 140, 0, 35)
-submitBtn.Position = UDim2.new(0.3, -70, 0.65, 0)
-submitBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-submitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-submitBtn.Text = "ПОДТВЕРДИТЬ"
-submitBtn.Font = Enum.Font.GothamBold
-submitBtn.TextSize = 14
-submitBtn.Parent = mainFrame
+-- Контейнер для списка игроков
+local scrollFrame = Instance.new("ScrollingFrame")
+scrollFrame.Name = "ScrollFrame"
+scrollFrame.Size = UDim2.new(1, 0, 0.92, 0)
+scrollFrame.Position = UDim2.new(0, 0, 0.08, 0)
+scrollFrame.BackgroundTransparency = 1
+scrollFrame.BorderSizePixel = 0
+scrollFrame.ScrollBarThickness = 5
+scrollFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+scrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrollFrame.Parent = mainFrame
 
-local copyBtn = Instance.new("TextButton")
-copyBtn.Name = "CopyBtn"
-copyBtn.Size = UDim2.new(0, 140, 0, 35)
-copyBtn.Position = UDim2.new(0.7, -70, 0.65, 0)
-copyBtn.Text = "Скопировать Playrock"
-copyBtn.Font = Enum.Font.GothamBold
-copyBtn.TextSize = 12
-copyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-copyBtn.Parent = mainFrame
+local listLayout = Instance.new("UIListLayout")
+listLayout.Name = "ListLayout"
+listLayout.Padding = UDim.new(0.01, 0)
+listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+listLayout.Parent = scrollFrame
 
-local btnGradient = Instance.new("UIGradient")
-btnGradient.Color = ColorSequence.new({
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 200, 255)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255))
-})
-btnGradient.Rotation = 90
-btnGradient.Parent = copyBtn
-
-local statusText = Instance.new("TextLabel")
-statusText.Name = "StatusText"
-statusText.Size = UDim2.new(1, -40, 0, 30)
-statusText.Position = UDim2.new(0, 20, 0.85, 0)
-statusText.Text = ""
-statusText.TextColor3 = Color3.fromRGB(255, 255, 255)
-statusText.TextXAlignment = Enum.TextXAlignment.Center
-statusText.BackgroundTransparency = 1
-statusText.Font = Enum.Font.Gotham
-statusText.TextSize = 14
-statusText.Parent = mainFrame
-
--- Анимации (без изменений)
-local function tween(obj, props, duration, easingStyle, easingDirection)
-    local tweenInfo = TweenInfo.new(duration, easingStyle or Enum.EasingStyle.Quad, easingDirection or Enum.EasingDirection.Out)
-    local tween = TweenService:Create(obj, tweenInfo, props)
-    tween:Play()
-    return tween
-end
-
-local function initialAnimation()
-    tween(mainFrame, {
-        Position = UDim2.new(0.5, -250, 0.5, -150)
-    }, 1.2, Enum.EasingStyle.Bounce)
-end
-
-local function successAnimation(callback)
-    submitBtn.Active = false
-    submitBtn.Text = "✓ УСПЕШНО"
-    tween(submitBtn, {
-        BackgroundTransparency = 0.7,
-        TextTransparency = 0.3,
-        BackgroundColor3 = Color3.fromRGB(0, 200, 0)
-    }, 0.3)
-
-    passwordText.Text = "ДОСТУП РАЗРЕШЕН!"
-    passwordText.TextColor3 = Color3.fromRGB(0, 255, 0)
-
-    tween(mainFrame, {
-        Size = UDim2.new(1, 0, 1, 0),
-        Position = UDim2.new(0, 0, 0, 0)
-    }, 1, Enum.EasingStyle.Quint)
-
-    tween(menuText, {
-        Position = UDim2.new(1, -20, 0, 20),
-        TextSize = 18
-    }, 0.5)
+-- Функция для создания элемента игрока
+local function createPlayerEntry(player)
+    local entry = Instance.new("Frame")
+    entry.Name = player.Name
+    entry.Size = UDim2.new(1, -10, 0.1, 0)
+    entry.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    entry.BackgroundTransparency = 0.5
+    entry.BorderSizePixel = 0
+    entry.LayoutOrder = player.UserId
+    entry.Parent = scrollFrame
     
-    tween(creditText, {
-        Position = UDim2.new(1, -20, 1, -30),
-        TextSize = 16
-    }, 0.5)
-
-    task.wait(1)
-    if callback then callback() end
-end
-
-local function hideAnimation()
-    tween(mainFrame, {
-        Size = UDim2.new(0, 100, 0, 60),
-        Position = UDim2.new(0.5, -50, 0.5, -12.5)
-    }, 0.6, Enum.EasingStyle.Back, Enum.EasingDirection.In).Completed:Wait()
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0.05, 0)
+    corner.Parent = entry
     
-    tween(mainFrame, {
-        Position = UDim2.new(0.5, -50, 0, -100)
-    }, 0.8).Completed:Wait()
+    local avatar = Instance.new("ImageLabel")
+    avatar.Name = "Avatar"
+    avatar.Size = UDim2.new(0.8, 0, 0.8, 0)
+    avatar.Position = UDim2.new(0.05, 0, 0.1, 0)
+    avatar.BackgroundTransparency = 1
+    avatar.Parent = entry
     
-    gui:Destroy()
-end
-
--- Проверка ключа
-local isChecking = false
-submitBtn.MouseButton1Click:Connect(function()
-    if isChecking then return end
-    isChecking = true
+    -- Загружаем аватар
+    local userId = player.UserId
+    local thumbType = Enum.ThumbnailType.HeadShot
+    local thumbSize = Enum.ThumbnailSize.Size100x100
+    local content, isReady = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
     
-    local inputKey = textBox.Text
-    local correctKey = HttpService:Base64Decode(encodedKey)
-    
-    if inputKey == correctKey then
-        statusText.Text = "Проверка ключа..."
-        statusText.TextColor3 = Color3.fromRGB(255, 255, 255)
-        
-        successAnimation(function()
-            local scriptURL = base64Decode(encodedScript)
-            local success, response = pcall(function()
-                return game:HttpGet(scriptURL, true)
-            end)
-
-            if success then
-                loadstring(response)()
-            else
-                warn("Ошибка загрузки скрипта!")
-            end
-            
-            hideAnimation()
-        end)
+    if isReady then
+        avatar.Image = content
     else
-        statusText.Text = "НЕВЕРНЫЙ КЛЮЧ!"
-        statusText.TextColor3 = Color3.fromRGB(255, 50, 50)
-        task.wait(1.5)
-        statusText.Text = ""
-        textBox.Text = ""
-        isChecking = false
+        avatar.Image = "rbxassetid://0" -- Заглушка, если аватар не загрузился
+    end
+    
+    local nameLabel = Instance.new("TextLabel")
+    nameLabel.Name = "NameLabel"
+    nameLabel.Size = UDim2.new(0.6, 0, 0.5, 0)
+    nameLabel.Position = UDim2.new(0.3, 0, 0.25, 0)
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.Text = player.Name
+    nameLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    nameLabel.TextScaled = true
+    nameLabel.Font = Enum.Font.Gotham
+    nameLabel.Parent = entry
+    
+    return entry
+end
+
+-- Обновляем список игроков
+local function updatePlayerList()
+    for _, child in ipairs(scrollFrame:GetChildren()) do
+        if child:IsA("Frame") and child.Name ~= "UIListLayout" then
+            child:Destroy()
+        end
+    end
+    
+    for _, player in ipairs(Players:GetPlayers()) do
+        createPlayerEntry(player)
+    end
+end
+
+-- Обработчики событий
+Players.PlayerAdded:Connect(function(player)
+    createPlayerEntry(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    local entry = scrollFrame:FindFirstChild(player.Name)
+    if entry then
+        entry:Destroy()
     end
 end)
 
-copyBtn.MouseButton1Click:Connect(function()
-    setclipboard(profileLink)
-    local originalText = copyBtn.Text
-    copyBtn.Text = "Скопировано!"
-    task.wait(1.5)
-    copyBtn.Text = originalText
-end)
-
--- Автоматическое обновление ключа при смене месяца
-local currentMonth = os.date("%m")
-game:GetService("RunService").Heartbeat:Connect(function()
-    if os.date("%m") ~= currentMonth then
-        currentMonth = os.date("%m")
-        encodedKey = generateKey()
-    end
-end)
-
-initialAnimation()
+-- Инициализация
+updatePlayerList()
